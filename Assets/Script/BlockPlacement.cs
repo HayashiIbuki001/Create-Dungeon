@@ -14,6 +14,8 @@ public class BlockPlacement : MonoBehaviour
     public Collider2D[] placementAreas; // 設置エリアのコライダーの配列
 
     private GameObject placementPreview; // 仮のブロックのインスタンス
+    public Vector2 gridSize = new Vector2(1.0f, 1.0f); // グリッドのサイズ
+    public Vector2 gridOffset = Vector2.zero; // グリッドのオフセット
 
     void Start()
     {
@@ -37,22 +39,23 @@ public class BlockPlacement : MonoBehaviour
         // マウスクリックがUI上で行われたかどうかを判定
         if (!EventSystem.current.IsPointerOverGameObject())
         {
-            // マウスの位置を取得
+            // マウスの位置を取得し、グリッドにスナップ
             Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector2 snappedPosition = SnapToGrid(mousePos);
 
             // 仮のブロックを設置位置に移動
             if (placementPreview != null)
             {
-                placementPreview.transform.position = mousePos;
-                if (IsPositionInAnyPlacementArea(mousePos))
+                placementPreview.transform.position = snappedPosition;
+                if (IsPositionInAnyPlacementArea(snappedPosition))
                 {
-                    if (CanPlaceBlock(mousePos))
+                    if (CanPlaceBlock(snappedPosition))
                     {
                         //placementPreview.GetComponent<SpriteRenderer>().color = Color.green; // 設置可能
                     }
                     else
                     {
-                       // placementPreview.GetComponent<SpriteRenderer>().color = Color.red; // 設置不可
+                        //placementPreview.GetComponent<SpriteRenderer>().color = Color.red; // 設置不可
                     }
                     placementPreview.SetActive(true); // 仮のブロックを表示
                 }
@@ -65,12 +68,21 @@ public class BlockPlacement : MonoBehaviour
             // 選択したブロックを設置する
             if (selectedBlock != null && Input.GetMouseButtonDown(0))
             {
-                if (IsPositionInAnyPlacementArea(mousePos) && CanPlaceBlock(mousePos))
+                if (IsPositionInAnyPlacementArea(snappedPosition) && CanPlaceBlock(snappedPosition))
                 {
-                    Instantiate(selectedBlock, mousePos, Quaternion.identity, blockParent);
+                    Instantiate(selectedBlock, snappedPosition, Quaternion.identity, blockParent);
                 }
             }
         }
+    }
+
+    // グリッドにスナップするメソッド
+    Vector2 SnapToGrid(Vector2 originalPosition)
+    {
+        // オフセットを考慮してスナップ
+        float snappedX = Mathf.Round((originalPosition.x - gridOffset.x) / gridSize.x) * gridSize.x + gridOffset.x;
+        float snappedY = Mathf.Round((originalPosition.y - gridOffset.y) / gridSize.y) * gridSize.y + gridOffset.y;
+        return new Vector2(snappedX, snappedY);
     }
 
     // ブロックを選択するメソッド
